@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -80,7 +79,7 @@ type ProjectsResponse struct {
 	NextPage *string   `json:"next_page"` // Use a pointer for optional field
 }
 
-func GetProjects(limit int, offset int, workspace string, team string, archived bool, optFields []string) ([]Project, *string) {
+func GetProjects(limit int, offset int, workspace string, team string, archived bool, optFields []string) ([]Project, *string, error) {
 
 	u := url.URL{
 		Scheme: "https",
@@ -104,7 +103,7 @@ func GetProjects(limit int, offset int, workspace string, team string, archived 
 
 	req, err := http.NewRequest("GET", u.String(), nil)
 	if err != nil {
-		return nil, fmt.Errorf("error creating request: %w", err)
+		return nil, nil, fmt.Errorf("error creating request: %w", err)
 	}
 
 	req.Header.Add("accept", "application/json")
@@ -122,7 +121,7 @@ func GetProjects(limit int, offset int, workspace string, team string, archived 
 		}
 	}()
 
-	body, err := ioutil.ReadAll(res.Body)
+	body, err := io.ReadAll(res.Body)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error reading response body: %w", err)
 	}
@@ -134,7 +133,7 @@ func GetProjects(limit int, offset int, workspace string, team string, archived 
 	var response ProjectsResponse
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return nil, fmt.Errorf("error unmarshalling response body: %w", err)
+		return nil, nil, fmt.Errorf("error unmarshalling response body: %w", err)
 	}
 
 	return response.Data, response.NextPage, nil
