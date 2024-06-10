@@ -135,7 +135,6 @@ func GetProjects(limit int, offset *string, workspace string, team *string, arch
 	}
 
 	if res.StatusCode != http.StatusOK {
-		fmt.Println(string(body))
 		return nil, nil, fmt.Errorf("unexpected status code: %d", res.StatusCode)
 	}
 
