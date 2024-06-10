@@ -67,19 +67,24 @@ func GetWorkspaces() ([]Workspace, error) {
 	return response.Data, nil
 }
 
-type Project struct {
+type ProjectResponse struct {
+	Data     []AsanaProject `json:"data"`
+	NextPage NextPageInfo   `json:"next_page"`
+}
+
+type AsanaProject struct {
 	Gid          string `json:"gid"`
 	Name         string `json:"name"`
 	ResourceType string `json:"resource_type"`
 }
 
-// Define a struct to represent the entire response
-type ProjectsResponse struct {
-	Data     []Project `json:"data"`
-	NextPage *string   `json:"next_page"` // Use a pointer for optional field
+type NextPageInfo struct {
+	Offset string `json:"offset"`
+	Path   string `json:"path"`
+	URI    string `json:"uri"`
 }
 
-func GetProjects(limit int, offset int, workspace string, team string, archived bool, optFields []string) ([]Project, *string, error) {
+func GetProjects(limit int, offset *string, workspace string, team string, archived bool, optFields []string) ([]AsanaProject, *string, error) {
 
 	u := url.URL{
 		Scheme: "https",
@@ -89,7 +94,10 @@ func GetProjects(limit int, offset int, workspace string, team string, archived 
 
 	params := url.Values{}
 	params.Add("limit", fmt.Sprint(limit))
-	// params.Add("offset", fmt.Sprint(offset)) // Add if needed
+	if offset != nil {
+		params.Add("offset", fmt.Sprint(offset))
+	}
+
 	params.Add("workspace", workspace)
 	if team != "" {
 		params.Add("team", team)
@@ -129,12 +137,13 @@ func GetProjects(limit int, offset int, workspace string, team string, archived 
 	if res.StatusCode != http.StatusOK {
 		return nil, nil, fmt.Errorf("unexpected status code: %d", res.StatusCode)
 	}
+	fmt.Println(string(body))
 
-	var response ProjectsResponse
+	var response ProjectResponse
 	err = json.Unmarshal(body, &response)
 	if err != nil {
 		return nil, nil, fmt.Errorf("error unmarshalling response body: %w", err)
 	}
 
-	return response.Data, response.NextPage, nil
+	return response.Data, &response.NextPage.Offset, nil
 }
