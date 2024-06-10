@@ -27,6 +27,8 @@ func SaveStructAsJSON(data any, filename string) error {
 
 func main() {
 
+	chunk_size := 10
+
 	workspaces, err := asanaClient.GetWorkspaces()
 	if err != nil {
 		log.Printf("Error occurred while processing data: %v\n", err)
@@ -34,9 +36,9 @@ func main() {
 	for _, workspace := range workspaces {
 
 		projects, offset, err := asanaClient.GetProjects(
-			1,             // Limit: Number of projects to retrieve
+			chunk_size,    // Limit: Number of projects to retrieve
 			nil,           // Offset: Starting index for pagination
-			workspace.GID, // Replace with your Asana workspace ID
+			workspace.GID, // Asana workspace ID
 			nil,           // Team: Optional team ID (leave empty if not needed)
 			false,         // Archived: Include archived projects (false for active)
 			nil,           // optFields: Optional list of additional fields to retrieve (leave nil for defaults)
@@ -51,9 +53,9 @@ func main() {
 
 		for *offset != "" {
 			projects, offset, err = asanaClient.GetProjects(
-				1,             // Limit: Number of projects to retrieve
+				chunk_size,    // Limit: Number of projects to retrieve
 				offset,        // Offset: Starting index for pagination
-				workspace.GID, // Replace with your Asana workspace ID
+				workspace.GID, // Asana workspace ID
 				nil,           // Team: Optional team ID (leave empty if not needed)
 				false,         // Archived: Include archived projects (false for active)
 				nil,           // optFields: Optional list of additional fields to retrieve (leave nil for defaults)
