@@ -1,0 +1,11 @@
+services:
+  asana_data_extractor:
+    container_name: asana_data_extractor
+    image: asana_data_extractor
+    build:
+      context: .
+    command: [ "tail", "-f", "/dev/null" ]
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"

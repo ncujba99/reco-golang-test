@@ -6,6 +6,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"os"
 )
 
 type Workspace struct {
@@ -17,6 +18,8 @@ type Workspace struct {
 type WorkspaceResponse struct {
 	Data []Workspace `json:"data"`
 }
+
+var token = os.Getenv("YOUR_TOKEN")
 
 func GetWorkspaces() ([]Workspace, error) {
 
@@ -30,7 +33,7 @@ func GetWorkspaces() ([]Workspace, error) {
 
 	req.Header.Add("accept", "application/json")
 	req.Header.Add("content-type", "application/json")
-	req.Header.Add("authorization", "Bearer 2/1207527516487162/1207528584115351:61657d87899d3ce6fc6af1fa8f682f77")
+	req.Header.Add("authorization", "Bearer "+token)
 
 	res, err := http.DefaultClient.Do(req)
 
@@ -88,7 +91,7 @@ func GetProjects(limit int, offset int, workspace string, team string, archived 
 
 	req.Header.Add("accept", "application/json")
 	req.Header.Add("content-type", "application/json")
-	req.Header.Add("authorization", "Bearer 2/1207527516487162/1207528584115351:61657d87899d3ce6fc6af1fa8f682f77")
+	req.Header.Add("authorization", "Bearer "+token)
 
 	res, err := http.DefaultClient.Do(req)
 
@@ -98,9 +101,6 @@ func GetProjects(limit int, offset int, workspace string, team string, archived 
 
 	defer res.Body.Close()
 	body, _ := io.ReadAll(res.Body)
-
-	// fmt.Println(string(body))
-	// return nil, nil
 
 	var response ProjectsResponse
 	err = json.Unmarshal(body, &response)
