@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 	"os"
@@ -22,35 +23,49 @@ type WorkspaceResponse struct {
 var token = os.Getenv("YOUR_TOKEN")
 
 func GetWorkspaces() ([]Workspace, error) {
-
 	u := url.URL{
 		Scheme: "https",
 		Host:   "app.asana.com",
 		Path:   "api/1.0/workspaces",
 	}
 
-	req, _ := http.NewRequest("GET", u.String(), nil)
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
 
 	req.Header.Add("accept", "application/json")
 	req.Header.Add("content-type", "application/json")
 	req.Header.Add("authorization", "Bearer "+token)
 
 	res, err := http.DefaultClient.Do(req)
-
 	if err != nil {
-		fmt.Print("error")
+		return nil, fmt.Errorf("error making request: %w", err)
 	}
 
-	defer res.Body.Close()
-	body, _ := io.ReadAll(res.Body)
+	defer func() {
+		if err := res.Body.Close(); err != nil {
+			fmt.Printf("error closing response body: %v\n", err)
+		}
+	}()
+
+	body, err := io.ReadAll(res.Body)
+
+	if err != nil {
+		return nil, fmt.Errorf("error reading response body: %w", err)
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d", res.StatusCode)
+	}
 
 	var response WorkspaceResponse
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return nil, nil
+		return nil, fmt.Errorf("error unmarshalling response body: %w", err)
 	}
-	return response.Data, err
 
+	return response.Data, nil
 }
 
 type Project struct {
@@ -75,7 +90,7 @@ func GetProjects(limit int, offset int, workspace string, team string, archived 
 
 	params := url.Values{}
 	params.Add("limit", fmt.Sprint(limit))
-	// params.Add("offset", fmt.Sprint(offset))
+	// params.Add("offset", fmt.Sprint(offset)) // Add if needed
 	params.Add("workspace", workspace)
 	if team != "" {
 		params.Add("team", team)
@@ -87,26 +102,40 @@ func GetProjects(limit int, offset int, workspace string, team string, archived 
 
 	u.RawQuery = params.Encode()
 
-	req, _ := http.NewRequest("GET", u.String(), nil)
+	req, err := http.NewRequest("GET", u.String(), nil)
+	if err != nil {
+		return nil, fmt.Errorf("error creating request: %w", err)
+	}
 
 	req.Header.Add("accept", "application/json")
 	req.Header.Add("content-type", "application/json")
 	req.Header.Add("authorization", "Bearer "+token)
 
 	res, err := http.DefaultClient.Do(req)
-
 	if err != nil {
-		fmt.Print("aaa")
+		return nil, nil, fmt.Errorf("error making request: %w", err)
 	}
 
-	defer res.Body.Close()
-	body, _ := io.ReadAll(res.Body)
+	defer func() {
+		if err := res.Body.Close(); err != nil {
+			fmt.Printf("error closing response body: %v\n", err)
+		}
+	}()
+
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return nil, nil, fmt.Errorf("error reading response body: %w", err)
+	}
+
+	if res.StatusCode != http.StatusOK {
+		return nil, nil, fmt.Errorf("unexpected status code: %d", res.StatusCode)
+	}
 
 	var response ProjectsResponse
 	err = json.Unmarshal(body, &response)
 	if err != nil {
-		return nil, nil
+		return nil, fmt.Errorf("error unmarshalling response body: %w", err)
 	}
-	return response.Data, response.NextPage
 
+	return response.Data, response.NextPage, nil
 }
