@@ -84,7 +84,7 @@ type NextPageInfo struct {
 	URI    string `json:"uri"`
 }
 
-func GetProjects(limit int, offset *string, workspace string, team string, archived bool, optFields []string) ([]AsanaProject, *string, error) {
+func GetProjects(limit int, offset *string, workspace string, team *string, archived bool, optFields []string) ([]AsanaProject, *string, error) {
 
 	u := url.URL{
 		Scheme: "https",
@@ -95,14 +95,14 @@ func GetProjects(limit int, offset *string, workspace string, team string, archi
 	params := url.Values{}
 	params.Add("limit", fmt.Sprint(limit))
 	if offset != nil {
-		params.Add("offset", fmt.Sprint(offset))
+		params.Add("offset", *offset)
 	}
 
 	params.Add("workspace", workspace)
-	if team != "" {
-		params.Add("team", team)
-	}
 	params.Add("archived", fmt.Sprint(archived))
+	if team != nil {
+		params.Add("team", *team)
+	}
 	for _, field := range optFields {
 		params.Add("opt_fields", field)
 	}
@@ -135,9 +135,9 @@ func GetProjects(limit int, offset *string, workspace string, team string, archi
 	}
 
 	if res.StatusCode != http.StatusOK {
+		fmt.Println(string(body))
 		return nil, nil, fmt.Errorf("unexpected status code: %d", res.StatusCode)
 	}
-	fmt.Println(string(body))
 
 	var response ProjectResponse
 	err = json.Unmarshal(body, &response)

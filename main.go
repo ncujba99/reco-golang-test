@@ -1,36 +1,73 @@
 package main
 
 import (
-	"fmt"
+	"encoding/json"
+	"log"
+	"os"
 	"reco-golang-test/internal/asanaClient"
 )
+
+func SaveStructAsJSON(data any, filename string) error {
+	// Marshal the struct into a byte slice
+	jsonData, err := json.Marshal(data)
+	if err != nil {
+		return err
+	}
+
+	// Open the file for writing with appropriate permissions (0644)
+	file, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return err
+	}
+	defer file.Close() // Ensure file is closed even on errors
+
+	_, err = file.Write(jsonData)
+	return err
+}
 
 func main() {
 
 	workspaces, err := asanaClient.GetWorkspaces()
 	if err != nil {
-		panic(err)
+		log.Printf("Error occurred while processing data: %v\n", err)
 	}
 	for _, workspace := range workspaces {
-		fmt.Println(workspace.GID)
 
-		projects, nextPage := asanaClient.GetProjects(
+		projects, offset, err := asanaClient.GetProjects(
 			1,             // Limit: Number of projects to retrieve
-			1,             // Offset: Starting index for pagination
+			nil,           // Offset: Starting index for pagination
 			workspace.GID, // Replace with your Asana workspace ID
-			"",            // Team: Optional team ID (leave empty if not needed)
+			nil,           // Team: Optional team ID (leave empty if not needed)
 			false,         // Archived: Include archived projects (false for active)
 			nil,           // optFields: Optional list of additional fields to retrieve (leave nil for defaults)
 		)
-
-		if nextPage != nil {
-
+		if err != nil {
+			log.Printf("Error occurred while processing data: %v\n", err)
 		}
 
 		for _, project := range projects {
-			fmt.Println(project)
+			SaveStructAsJSON(project, project.Gid+".json")
+		}
+
+		for *offset != "" {
+			projects, offset, err = asanaClient.GetProjects(
+				1,             // Limit: Number of projects to retrieve
+				offset,        // Offset: Starting index for pagination
+				workspace.GID, // Replace with your Asana workspace ID
+				nil,           // Team: Optional team ID (leave empty if not needed)
+				false,         // Archived: Include archived projects (false for active)
+				nil,           // optFields: Optional list of additional fields to retrieve (leave nil for defaults)
+			)
+
+			if err != nil {
+				log.Printf("Error occurred while processing data: %v\n", err)
+			}
+			for _, project := range projects {
+				SaveStructAsJSON(project, project.Gid+".json")
+			}
 
 		}
+
 	}
 
 }
